@@ -1,0 +1,45 @@
+name: Benchmark Windows vs Linux
+
+on:
+  workflow_dispatch:
+    inputs:
+      runs:
+        description: "Jumlah pengulangan"
+        required: false
+        default: "30"
+
+jobs:
+  benchmark:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Ambil kode
+        uses: actions/checkout@v4
+
+      - name: Pasang Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Catat info runner
+        shell: python
+        run: |
+          import platform, os
+          print("Platform :", platform.platform())
+          print("Mesin    :", platform.machine())
+          print("CPU      :", os.cpu_count(), "core")
+
+      - name: Jalankan benchmark
+        shell: bash
+        env:
+          RUNS: ${{ github.event.inputs.runs || '30' }}
+        run: python benchmark.py "$RUNS"
+
+      - name: Simpan hasil CSV
+        uses: actions/upload-artifact@v4
+        with:
+          name: hasil-${{ matrix.os }}
+          path: hasil_*.csv
